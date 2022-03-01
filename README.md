@@ -13,28 +13,29 @@ This is the original pytorch implementation of Graph WaveNet in the following pa
 - python 3
 - see `requirements.txt`
 
+- Run in virtual environment
+
+# == EDITED ==
 
 ## Data Preparation
 
-### Step1: Download METR-LA and PEMS-BAY data from [Google Drive](https://drive.google.com/open?id=10FOTa6HXPqX8Pf5WRoRwcFnW9BrNZEIX) or [Baidu Yun](https://pan.baidu.com/s/14Yy9isAIZYdU__OYEQGa_g) links provided by [DCRNN](https://github.com/liyaguang/DCRNN).
+### Step1: Download temperature data from ORIGIN 
 
-### Step2: Process raw data 
+IMPROVED_full_max_temps_reduced.h5
+
+### Step2: Process raw data
 
 ```
 # Create data directories
-mkdir -p data/{METR-LA,PEMS-BAY}
+mkdir -p data/MAX-TEMP_improved
 
 # METR-LA
-python generate_training_data.py --output_dir=data/METR-LA --traffic_df_filename=data/metr-la.h5
+python generate_training_data.py --output_dir=data/MAX-TEMP_improved --traffic_df_filename=data/IMPROVED_full_max_temps_reduced.h5
 
-# PEMS-BAY
-python generate_training_data.py --output_dir=data/PEMS-BAY --traffic_df_filename=data/pems-bay.h5
 
 ```
 ## Train Commands
 
 ```
-python train.py --gcn_bool --adjtype doubletransition --addaptadj  --randomadj
+python train.py --gcn_bool --adjtype identity --addaptadj  --randomadj --data=data/MAX-TEMP_improved
 ```
-
-
