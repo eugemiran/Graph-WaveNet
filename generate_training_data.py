@@ -28,10 +28,12 @@ def generate_graph_seq2seq_io_data(
     num_samples, num_nodes = df.shape
     data = np.expand_dims(df.values, axis=-1)
     feature_list = [data]
+
     if add_time_in_day:
-        time_ind = (df.index.values - df.index.values.astype("datetime64[D]")) / np.timedelta64(1, "D")
+        time_ind = (df.index.values - df.index.values.astype("datetime64[D]")) / np.timedelta64(1, "D") # NOTE: normaliza el tiempo en dias
         time_in_day = np.tile(time_ind, [1, num_nodes, 1]).transpose((2, 1, 0))
         feature_list.append(time_in_day)
+
     if add_day_in_week:
         dow = df.index.dayofweek
         dow_tiled = np.tile(dow, [1, num_nodes, 1]).transpose((2, 1, 0))
@@ -62,7 +64,7 @@ def generate_train_val_test(args):
         df,
         x_offsets=x_offsets,
         y_offsets=y_offsets,
-        add_time_in_day=True,
+        add_time_in_day=False,
         add_day_in_week=args.dow,
     )
 
