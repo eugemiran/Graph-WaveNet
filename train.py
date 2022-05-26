@@ -128,10 +128,10 @@ def main():
             print(log.format(i, mtrain_loss, mtrain_mape, mtrain_rmse, mvalid_loss, mvalid_mape, mvalid_rmse, (t2 - t1)),flush=True)
             torch.save(engine.model.state_dict(), args.save+"_epoch_"+str(i)+"_"+str(round(mvalid_loss,2))+".pth")
 
-    print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
-    print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
+        print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
+        print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
 
-    list_of_files = glob.glob('./garage/*')
+    list_of_files = glob.glob('./garage/*best?*')
     latest_file = max(list_of_files, key=os.path.getctime)
 
     #testing
@@ -148,7 +148,6 @@ def main():
 
     dates = dataloader['dates_test']
     stations = dataloader['stations_test']
-
 
     for iter, (x, y, _, _) in enumerate(dataloader['test_loader'].get_iterator()):
         testx = torch.Tensor(x).to(device)
@@ -174,7 +173,7 @@ def main():
     amae = []
     amape = []
     armse = []
-    for i in range(args.in_dim):
+    for i in range(1):
         pred = scaler.inverse_transform(yhat[:,:,i])
         real = realy[:,:,i]
 
