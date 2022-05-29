@@ -131,14 +131,13 @@ def main():
         print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
         print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
 
-    list_of_files = glob.glob('./garage/*best?*')
-    latest_file = max(list_of_files, key=os.path.getctime)
-
     #testing
     if (not args.no_train):
         bestid = np.argmin(his_loss)
         engine.model.load_state_dict(torch.load(args.save+"_epoch_"+str(bestid+1)+"_"+str(round(his_loss[bestid],2))+".pth"))
     else:
+        list_of_files = glob.glob('./garage/*best?*')
+        latest_file = max(list_of_files, key=os.path.getctime)
         engine.model.load_state_dict(torch.load(latest_file))
 
 
