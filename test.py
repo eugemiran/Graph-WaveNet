@@ -18,7 +18,7 @@ parser.add_argument('--randomadj',action='store_true',help='whether random initi
 parser.add_argument('--seq_length',type=int,default=12,help='')
 parser.add_argument('--nhid',type=int,default=32,help='')
 parser.add_argument('--in_dim',type=int,default=1,help='inputs dimension')
-parser.add_argument('--num_nodes',type=int,default=97,help='number of nodes')
+parser.add_argument('--num_nodes',type=int,default=137,help='number of nodes')
 parser.add_argument('--batch_size',type=int,default=64,help='batch size')
 parser.add_argument('--learning_rate',type=float,default=0.001,help='learning rate')
 parser.add_argument('--dropout',type=float,default=0.3,help='dropout rate')
