@@ -60,7 +60,7 @@ def main():
         supports = None
 
 
-
+    
     engine = trainer(scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, args.dropout,
                          args.learning_rate, args.weight_decay, device, supports, args.gcn_bool, args.addaptadj,
                          adjinit)
@@ -70,6 +70,7 @@ def main():
     his_loss =[]
     val_time = []
     train_time = []
+    total_train_loss = []
     if (not args.no_train):
         for i in range(1,args.epochs+1):
             #if i % 10 == 0:
@@ -88,6 +89,7 @@ def main():
                 trainy = trainy.transpose(1, 3)
                 metrics = engine.train(trainx, trainy[:,0,:,:])
                 train_loss.append(metrics[0])
+                total_train_loss.append(metrics[0])
                 train_mape.append(metrics[1])
                 train_rmse.append(metrics[2])
                 if iter % args.print_every == 0 :
@@ -131,6 +133,12 @@ def main():
         print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
         print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
 
+        train_loss_file = open("./garage/train_loss.txt", "w")
+        for element in total_train_loss:
+            train_loss_file.write(str(element) + "\n")
+
+        train_loss_file.close()
+
     #testing
     if (not args.no_train):
         bestid = np.argmin(his_loss)
@@ -158,7 +166,6 @@ def main():
 
     yhat = torch.cat(outputs,dim=0)
     yhat = yhat[:realy.size(0),...]
-
 
     print("Training finished")
 
