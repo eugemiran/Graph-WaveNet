@@ -148,8 +148,9 @@ def main():
         latest_file = max(list_of_files, key=os.path.getctime)
         engine.model.load_state_dict(torch.load(latest_file))
 
-    adapted_adj_matrix = engine.model.supports[0].numpy()
-    np.save("./garage/adj_adpt", adapted_adj_matrix)
+    if (len(engine.model.supports) != 0):
+        adapted_adj_matrix = engine.model.supports[0].numpy()
+        np.save("./garage/adj_adpt", adapted_adj_matrix)
 
     outputs = []
     realy = torch.Tensor(dataloader['y_test']).to(device)
