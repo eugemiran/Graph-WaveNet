@@ -149,7 +149,7 @@ def main():
         engine.model.load_state_dict(torch.load(latest_file))
 
     if (len(engine.model.supports) != 0):
-        adapted_adj_matrix = engine.model.supports[0].numpy()
+        adapted_adj_matrix = engine.model.supports[0].numpy() if (args.device == 'cpu') else engine.model.supports[0].cpu().numpy()
         np.save("./garage/adj_adpt", adapted_adj_matrix)
 
     outputs = []
