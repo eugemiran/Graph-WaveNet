@@ -209,12 +209,13 @@ def main():
     for i in range(1):
         pred = scaler.inverse_transform(yhat[:,:,i])
         real = realy[:,:,i]
+        pred_data = pred if args.device == 'cpu' else pred.cpu().numpy()
+        real_data = real if args.device == 'cpu' else real.cpu().numpy()
 
-        df_pred = pd.DataFrame(pred, columns=stations)
+        df_pred = pd.DataFrame(pred_data, columns=stations)
         df_pred["dates"] = dates
         df_pred = pd.melt(df_pred, id_vars=['dates'], value_vars=stations, var_name="id", value_name="prediction")
-
-        df_real = pd.DataFrame(real, columns=stations, index=dates)
+        df_real = pd.DataFrame(real_data, columns=stations, index=dates)
         df_real["dates"] = dates
         df_real = pd.melt(df_real, id_vars=['dates'], value_vars=stations, var_name="id", value_name="y")
 
