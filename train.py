@@ -48,6 +48,7 @@ def main():
     epochs_since_best_mae = 0
     lowest_rmse_yet = 100
     best_model_save_path = os.path.join(args.save, 'best_model.pth')
+    os.makedirs(args.save, exist_ok=True)
 
     device = torch.device(args.device)
     sensor_ids, sensor_id_to_ind, adj_mx = util.load_adj(args.adjdata,args.adjtype)
