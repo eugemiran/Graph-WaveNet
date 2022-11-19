@@ -27,6 +27,7 @@ parser.add_argument('--learning_rate',type=float,default=0.001,help='learning ra
 parser.add_argument('--dropout',type=float,default=0.3,help='dropout rate')
 parser.add_argument('--weight_decay',type=float,default=0.0001,help='weight decay rate')
 parser.add_argument('--epochs',type=int,default=20,help='')
+parser.add_argument('--from_epochs',type=int,default=0,help='')
 parser.add_argument('--print_every',type=int,default=50,help='')
 #parser.add_argument('--seed',type=int,default=99,help='random seed')
 parser.add_argument('--save',type=str,default='./garage/metr',help='save path')
@@ -43,6 +44,11 @@ def main():
     #torch.manual_seed(args.seed)
     #np.random.seed(args.seed)
     #load data
+    patience = 20
+    epochs_since_best_mae = 0
+    lowest_rmse_yet = 100
+    best_model_save_path = os.path.join(args.save, 'best_model.pth')
+
     device = torch.device(args.device)
     sensor_ids, sensor_id_to_ind, adj_mx = util.load_adj(args.adjdata,args.adjtype)
     dataloader = util.load_dataset(args.data, args.batch_size, args.batch_size, args.batch_size)
@@ -72,7 +78,8 @@ def main():
     train_time = []
     total_train_loss = []
     if (not args.no_train):
-        for i in range(1,args.epochs+1):
+        for i in range(args.from_epochs + 1,args.epochs+1):
+            print(f'Epoch number: {i}')
             #if i % 10 == 0:
                 #lr = max(0.000002,args.learning_rate * (0.1 ** (i // 10)))
                 #for g in engine.optimizer.param_groups:
@@ -89,7 +96,7 @@ def main():
                 trainy = trainy.transpose(1, 3)
                 metrics = engine.train(trainx, trainy[:,0,:,:])
                 train_loss.append(metrics[0])
-                total_train_loss.append(metrics[0])
+                total_train_loss.append(metrics[2])
                 train_mape.append(metrics[1])
                 train_rmse.append(metrics[2])
                 if iter % args.print_every == 0 :
@@ -113,6 +120,7 @@ def main():
                 valid_loss.append(metrics[0])
                 valid_mape.append(metrics[1])
                 valid_rmse.append(metrics[2])
+
             s2 = time.time()
             log = 'Epoch: {:03d}, Inference Time: {:.4f} secs'
             print(log.format(i,(s2-s1)))
@@ -124,7 +132,16 @@ def main():
             mvalid_loss = np.mean(valid_loss)
             mvalid_mape = np.mean(valid_mape)
             mvalid_rmse = np.mean(valid_rmse)
-            his_loss.append(mvalid_loss)
+            his_loss.append(mvalid_rmse)
+            if mvalid_rmse < lowest_rmse_yet:
+                torch.save(engine.model.state_dict(), best_model_save_path)
+                lowest_rmse_yet = mvalid_rmse
+                epochs_since_best_mae = 0
+            else:
+                epochs_since_best_mae += 1
+
+            if epochs_since_best_mae >= patience:
+                break
 
             log = 'Epoch: {:03d}, Train Loss: {:.4f}, Train MAPE: {:.4f}, Train RMSE: {:.4f}, Valid Loss: {:.4f}, Valid MAPE: {:.4f}, Valid RMSE: {:.4f}, Training Time: {:.4f}/epoch'
             print(log.format(i, mtrain_loss, mtrain_mape, mtrain_rmse, mvalid_loss, mvalid_mape, mvalid_rmse, (t2 - t1)),flush=True)
