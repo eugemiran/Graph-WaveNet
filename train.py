@@ -152,10 +152,16 @@ def main():
         print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
 
         train_loss_file = open("./garage/train_loss.txt", "w")
+        val_loss_file = open("./garage/val_loss.txt", "w")
         for element in total_train_loss:
             train_loss_file.write(str(element) + "\n")
+        
+        for element in his_loss:
+            val_loss_file.write(str(element) + "\n")
+            
 
         train_loss_file.close()
+        val_loss_file.close()
 
     #testing
     if (not args.no_train):
