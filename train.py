@@ -207,7 +207,7 @@ def main():
     amape = []
     armse = []
     for i in range(1):
-        pred = scaler.inverse_transform(yhat[:,:,i])
+        pred = scaler.inverse_transform(yhat) if args.seq_length == 1 else scaler.inverse_transform(yhat[:,:,i])
         real = realy[:,:,i]
         pred_data = pred if args.device == 'cpu' else pred.cpu().numpy()
         real_data = real if args.device == 'cpu' else real.cpu().numpy()
