@@ -160,6 +160,7 @@ def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_siz
         data['x_' + category][..., 0] = scaler.transform(data['x_' + category][..., 0])
     data['train_loader'] = DataLoader(data['x_train'], data['y_train'], batch_size, data['dates_train'], data['stations_train'])
     data['val_loader'] = DataLoader(data['x_val'], data['y_val'], valid_batch_size, data['dates_val'], data['stations_val'])
+    data['crossval_loader'] = DataLoader(data['x_train'].concat(data['x_val']), data['y_train'].concat(data['y_val']), batch_size, data['dates_train'].concat(data['dates_val']), data['stations_train'].concat(data['stations_val']))
     data['test_loader'] = DataLoader(data['x_test'], data['y_test'], test_batch_size, data['dates_test'], data['stations_test'])
     data['scaler'] = scaler
     return data
