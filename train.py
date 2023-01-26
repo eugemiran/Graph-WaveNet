@@ -18,7 +18,7 @@ parser.add_argument('--aptonly',action='store_true',help='whether only adaptive 
 parser.add_argument('--addaptadj',action='store_true',help='whether add adaptive adj')
 parser.add_argument('--gcn_bool',action='store_true',help='whether to add graph convolution layer')
 parser.add_argument('--randomadj',action='store_true',help='whether random initialize adaptive adj')
-parser.add_argument('--seq_length',type=int,default=12,help='')
+parser.add_argument('--seq_length',type=int,default=12,help='') # son los y
 parser.add_argument('--nhid',type=int,default=32,help='')
 parser.add_argument('--in_dim',type=int,default=1,help='inputs dimension')
 parser.add_argument('--num_nodes',type=int,default=137,help='number of nodes')
@@ -44,8 +44,8 @@ def main():
     #torch.manual_seed(args.seed)
     #np.random.seed(args.seed)
     #load data
-    patience = 20
-    epochs_since_best_mae = 0
+    patience = 1000
+    epochs_since_best_rmse = 0
     lowest_rmse_yet = 100
     best_model_save_path = os.path.join(args.save, 'best_model.pth')
     os.makedirs(args.save, exist_ok=True)
@@ -78,6 +78,9 @@ def main():
     val_time = []
     train_time = []
     total_train_loss = []
+    # val_outputs = []
+    # val_realy = torch.Tensor(dataloader['y_val']).to(device)
+    # val_realy = val_realy.transpose(1,3)[:,0,:,:]
     if (not args.no_train):
         for i in range(args.from_epochs + 1,args.epochs+1):
             print(f'Epoch number: {i}')
@@ -96,7 +99,7 @@ def main():
                 trainy = torch.Tensor(y).to(device)
                 trainy = trainy.transpose(1, 3)
                 metrics = engine.train(trainx, trainy[:,0,:,:])
-                train_loss.append(metrics[0])
+                train_loss.append(metrics[2])
                 total_train_loss.append(metrics[2])
                 train_mape.append(metrics[1])
                 train_rmse.append(metrics[2])
@@ -118,7 +121,10 @@ def main():
                 testy = torch.Tensor(y).to(device)
                 testy = testy.transpose(1, 3)
                 metrics = engine.eval(testx, testy[:,0,:,:])
-                valid_loss.append(metrics[0])
+                # preds = engine.model(testx).transpose(1,3)
+                # val_outputs.append(preds.squeeze())
+                
+                valid_loss.append(metrics[2])
                 valid_mape.append(metrics[1])
                 valid_rmse.append(metrics[2])
 
@@ -137,11 +143,14 @@ def main():
             if mvalid_rmse < lowest_rmse_yet:
                 torch.save(engine.model.state_dict(), best_model_save_path)
                 lowest_rmse_yet = mvalid_rmse
-                epochs_since_best_mae = 0
+                epochs_since_best_rmse = 0
             else:
-                epochs_since_best_mae += 1
+                epochs_since_best_rmse += 1
 
-            if epochs_since_best_mae >= patience:
+            if epochs_since_best_rmse >= patience:
+                print('patience ', patience)
+                print('epochs_since_best_rmse ', epochs_since_best_rmse)
+                print(f'current_valid_loss: {mvalid_rmse} epochs: {i}')
                 break
 
             log = 'Epoch: {:03d}, Train Loss: {:.4f}, Train MAPE: {:.4f}, Train RMSE: {:.4f}, Valid Loss: {:.4f}, Valid MAPE: {:.4f}, Valid RMSE: {:.4f}, Training Time: {:.4f}/epoch'
@@ -166,7 +175,7 @@ def main():
     #testing
     if (not args.no_train):
         bestid = np.argmin(his_loss)
-        engine.model.load_state_dict(torch.load(args.save+"_epoch_"+str(bestid+1)+"_"+str(round(his_loss[bestid],2))+".pth"))
+        # engine.model.load_state_dict(torch.load(args.save+"_epoch_"+str(bestid+1)+"_"+str(round(his_loss[bestid],2))+".pth"))
     else:
         list_of_files = glob.glob('./garage/*best?*')
         latest_file = max(list_of_files, key=os.path.getctime)
@@ -199,28 +208,28 @@ def main():
     if (not args.no_train):
         print("The valid loss on best model is", str(round(his_loss[bestid],4)))
 
-    result_metrics = pd.DataFrame(columns=["date", "id", "y", "prediction"])
-    dates = np.squeeze(dates, axis=1)
-    result_metrics["date"] = dates
+    # result_metrics = pd.DataFrame(columns=["date", "id", "y", "prediction"])
+    # dates = np.squeeze(dates, axis=1)
+    # result_metrics["date"] = dates
 
     amae = []
     amape = []
     armse = []
-    for i in range(1):
+    for i in range(args.seq_length):
         pred = scaler.inverse_transform(yhat) if args.seq_length == 1 else scaler.inverse_transform(yhat[:,:,i])
         real = realy[:,:,i]
-        pred_data = pred if args.device == 'cpu' else pred.cpu().numpy()
-        real_data = real if args.device == 'cpu' else real.cpu().numpy()
+        # pred_data = pred if args.device == 'cpu' else pred.cpu().numpy()
+        # real_data = real if args.device == 'cpu' else real.cpu().numpy()
 
-        df_pred = pd.DataFrame(pred_data, columns=stations)
-        df_pred["dates"] = dates
-        df_pred = pd.melt(df_pred, id_vars=['dates'], value_vars=stations, var_name="id", value_name="prediction")
-        df_real = pd.DataFrame(real_data, columns=stations, index=dates)
-        df_real["dates"] = dates
-        df_real = pd.melt(df_real, id_vars=['dates'], value_vars=stations, var_name="id", value_name="y")
+        # df_pred = pd.DataFrame(pred_data, columns=stations)
+        # df_pred["dates"] = dates
+        # df_pred = pd.melt(df_pred, id_vars=['dates'], value_vars=stations, var_name="id", value_name="prediction")
+        # df_real = pd.DataFrame(real_data, columns=stations, index=dates)
+        # df_real["dates"] = dates
+        # df_real = pd.melt(df_real, id_vars=['dates'], value_vars=stations, var_name="id", value_name="y")
 
-        df_merge = df_pred.merge(df_real, left_on=['dates', 'id'], right_on=['dates', 'id'])
-        df_merge.to_csv(f'{args.save}_predictions.csv', index=False)
+        # df_merge = df_pred.merge(df_real, left_on=['dates', 'id'], right_on=['dates', 'id'])
+        # df_merge.to_csv(f'{args.save}_predictions.csv', index=False)
 
         metrics = util.metric(pred,real)
         log = 'Evaluate best model on test data for horizon {:d}, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
@@ -229,8 +238,8 @@ def main():
         amape.append(metrics[1])
         armse.append(metrics[2])
 
-    log = 'On average over 12 horizons, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
-    print(log.format(np.mean(amae),np.mean(amape),np.mean(armse)))
+    log = 'On average over {:.4f} horizons, Test MAE: {:.4f}, Test MAPE: {:.4f}, Test RMSE: {:.4f}'
+    print(log.format(args.seq_length, np.mean(amae),np.mean(amape),np.mean(armse)))
 
     if (not args.no_train):
         torch.save(engine.model.state_dict(), args.save+"_exp"+str(args.expid)+"_best_"+str(round(his_loss[bestid],2))+".pth")
