@@ -92,8 +92,8 @@ def main():
             train_mape = []
             train_rmse = []
             t1 = time.time()
-            dataloader['train_loader'].shuffle()
-            for iter, (x, y, _, _) in enumerate(dataloader['train_loader'].get_iterator()):
+            dataloader['crossval_loader'].shuffle()
+            for iter, (x, y, _, _) in enumerate(dataloader['crossval_loader'].get_iterator()):
                 trainx = torch.Tensor(x).to(device)
                 trainx= trainx.transpose(1, 3)
                 trainy = torch.Tensor(y).to(device)
