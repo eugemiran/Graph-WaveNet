@@ -4,6 +4,7 @@ import os
 import scipy.sparse as sp
 import torch
 from scipy.sparse import linalg
+from sklearn.model_selection import TimeSeriesSplit
 
 
 class DataLoader(object):
@@ -148,19 +149,36 @@ def load_adj(pkl_filename, adjtype):
 
 def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_size=None):
     data = {}
+    tscv = TimeSeriesSplit(n_splits=10)
+
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(dataset_dir, category + '.npz'), allow_pickle=True)
         data['x_' + category] = cat_data['x']
         data['y_' + category] = cat_data['y']
         data['dates_' + category] = cat_data['dates']
         data['stations_' + category] = cat_data['stations']
+
+    # Add cross validation data
+    data['x_crossval'] = list(np.concatenate((np.array(data['x_train']), np.array(data['x_val']))))
+    data['y_crossval'] = list(np.concatenate((data['y_train'], data['y_val'])))
+    data['dates_crossval'] = data['dates_train']
+    data['stations_crossval'] = data['stations_train']
+
+    for i, (train_index, test_index) in enumerate(tscv.split(data['x_crossval'])):
+        data[f'train_x_fold_{i}'] = data['x_crossval'][train_index[0]: train_index[-1]]
+        data[f'train_y_fold_{i}'] = data['y_crossval'][train_index[0]: train_index[-1]]
+        data[f'train_fold_{i}_loader'] = DataLoader(data[f'train_x_fold_{i}'], data[f'train_y_fold_{i}'], batch_size, data['dates_crossval'], data['stations_crossval'])
+        data[f'test_x_fold_{i}'] = data['x_crossval'][test_index[0]: test_index[-1]]
+        data[f'test_y_fold_{i}'] = data['y_crossval'][test_index[0]: test_index[-1]]
+        data[f'test_fold_{i}_loader'] = DataLoader(data[f'test_x_fold_{i}'], data[f'test_y_fold_{i}'], batch_size, data['dates_crossval'], data['stations_crossval'])
+
     scaler = StandardScaler(mean=data['x_train'][..., 0].mean(), std=data['x_train'][..., 0].std())
     # Data format
     for category in ['train', 'val', 'test']:
         data['x_' + category][..., 0] = scaler.transform(data['x_' + category][..., 0])
     data['train_loader'] = DataLoader(data['x_train'], data['y_train'], batch_size, data['dates_train'], data['stations_train'])
     data['val_loader'] = DataLoader(data['x_val'], data['y_val'], valid_batch_size, data['dates_val'], data['stations_val'])
-    data['crossval_loader'] = DataLoader(data['x_train'].concat(data['x_val']), data['y_train'].concat(data['y_val']), batch_size, data['dates_train'].concat(data['dates_val']), data['stations_train'].concat(data['stations_val']))
+    data['crossval_loader'] = DataLoader(data['x_crossval'], data['y_crossval'], batch_size, data['dates_crossval'], data['stations_crossval'])
     data['test_loader'] = DataLoader(data['x_test'], data['y_test'], test_batch_size, data['dates_test'], data['stations_test'])
     data['scaler'] = scaler
     return data
