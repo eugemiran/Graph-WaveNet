@@ -147,9 +147,9 @@ def load_adj(pkl_filename, adjtype):
     return sensor_ids, sensor_id_to_ind, adj
 
 
-def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_size=None):
+def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_size=None, splits=10):
     data = {}
-    tscv = TimeSeriesSplit(n_splits=10)
+    tscv = TimeSeriesSplit(n_splits=splits)
 
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(dataset_dir, category + '.npz'), allow_pickle=True)
