@@ -88,9 +88,9 @@ def main():
             metrics = engine.train(trainx, trainy[:,0,:,:])
             train_loss.append(metrics[2])
             total_train_loss.append(metrics[2])
-            if iter % args.print_every == 0 :
+            if iter % args.print_every == 0:
                 log = 'Iter: {:03d}, Train Loss: {:.4f}'
-                print(log.format(iter, train_loss[-1],flush=True)
+                print(log.format(iter, train_loss[-1],flush=True))
         t2 = time.time()
         train_time.append(t2-t1)
         valid_loss = []
