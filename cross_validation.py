@@ -76,7 +76,7 @@ def main():
     train_loss = []
     total_train_loss=[]
 
-    for i in args.splits:
+    for i in range(args.splits):
         t1 = time.time()
         dataloader[f'train_fold_{i}_loader'].shuffle()
         dataloader[f'test_fold_{i}_loader'].shuffle()
