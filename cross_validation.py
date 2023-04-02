@@ -67,45 +67,54 @@ def main():
     print("start training...",flush=True)
     val_time = []
     train_time = []
-    
-    train_loss = []
+    total_valid_loss = []
     total_train_loss=[]
 
     # format: (dropout, weight_decay)
-    hiperparams_grid = [(0.3, 0.0001), (0.3, 0.0001), (0.3, 0.0001), (0.3, 0.0001), (0.3, 0.0001)]
+    # should have the length of splits
+    hiperparams_grid = [(0.1, 0.0001), (0.3, 0.0001), (0.5, 0.0001), (0.8, 0.0001), (1, 0.0001)]
 
-    for i in range(args.splits):
+    for i in range(args.splits):    
         t1 = time.time()
-        dataloader[f'train_fold_{i}_loader'].shuffle()
-        dataloader[f'test_fold_{i}_loader'].shuffle()
 
         adjinit_init = adjinit
+        supports_init = supports
+        scaler_init = scaler
         dropout = hiperparams_grid[i][0]
         weight_decay = hiperparams_grid[i][1]
 
         #Defino aca los parametros
-        engine = trainer(scaler, args.in_dim, args.seq_length, args.num_nodes, args.nhid, dropout,
-                         args.learning_rate, weight_decay, device, supports, args.gcn_bool, args.addaptadj,
+        engine = trainer(scaler_init, args.in_dim, args.seq_length, args.num_nodes, args.nhid, dropout,
+                         args.learning_rate, weight_decay, device, supports_init, args.gcn_bool, args.addaptadj,
                          adjinit_init)
-        
+        print('')
         print(f'Starts training with values: Droput:{dropout} Weight decay: {weight_decay}')
-        for iter, (x, y, _, _) in enumerate(dataloader[f'train_fold_{i}_loader'].get_iterator()):
-            trainx = torch.Tensor(x).to(device)
-            trainx = trainx.transpose(1, 3)
-            trainy = torch.Tensor(y).to(device)
-            trainy = trainy.transpose(1, 3)
-            metrics = engine.train(trainx, trainy[:,0,:,:])
-            train_loss.append(metrics[2])
-            total_train_loss.append(metrics[2])
-            if iter % args.print_every == 0:
-                log = 'Iter: {:03d}, Train Loss: {:.4f}'
-                print(log.format(iter, train_loss[-1],flush=True))
-        t2 = time.time()
-        train_time.append(t2-t1)
-        valid_loss = []
 
 
+        for j in range(args.from_epochs + 1, args.epochs+1):
+            print(f'Epoch number: {j}')
+            train_loss = []
+            valid_loss = []
+            dataloader[f'train_fold_{i}_loader'].shuffle()
+
+            for iter, (x, y, _, _) in enumerate(dataloader[f'train_fold_{i}_loader'].get_iterator()):
+                trainx = torch.Tensor(x).to(device)
+                trainx = trainx.transpose(1, 3)
+                trainy = torch.Tensor(y).to(device)
+                trainy = trainy.transpose(1, 3)
+                metrics = engine.train(trainx, trainy[:,0,:,:])
+                train_loss.append(metrics[2])
+                total_train_loss.append(metrics[2])
+                if iter % args.print_every == 0:
+                    log = 'Iter: {:03d}, Train Loss: {:.4f}'
+                    print(log.format(iter, train_loss[-1],flush=True))
+            t2 = time.time()
+            train_time.append(t2-t1)
+
+        #aca
         s1 = time.time()
+        dataloader[f'test_fold_{i}_loader'].shuffle()
+        
         for iter, (x, y, _, _) in enumerate(dataloader[f'test_fold_{i}_loader'].get_iterator()):
             testx = torch.Tensor(x).to(device)
             testx = testx.transpose(1, 3)
@@ -114,12 +123,12 @@ def main():
             metrics = engine.eval(testx, testy[:,0,:,:])
             # preds = engine.model(testx).transpose(1,3)
             # val_outputs.append(preds.squeeze())
-            
+            total_valid_loss.append(metrics[2])
             valid_loss.append(metrics[2])
 
         s2 = time.time()
         log = 'Epoch: {:03d}, Inference Time: {:.4f} secs'
-        print(log.format(i,(s2-s1)))
+        print(log.format(j,(s2-s1)))
         print(f'Valid loss: {metrics[2]}')
         val_time.append(s2-s1)
         mtrain_loss = np.mean(train_loss)
@@ -127,8 +136,8 @@ def main():
 
 
         log = 'Epoch: {:03d}, Train Loss: {:.4f}, Valid Loss: {:.4f}, Training Time: {:.4f}/epoch'
-        print(log.format(i, mtrain_loss, mvalid_loss, (t2 - t1)),flush=True)
-        torch.save(engine.model.state_dict(), args.save+"_epoch_"+str(i)+"_"+str(round(mvalid_loss,2))+".pth")
+        print(log.format(j, mtrain_loss, mvalid_loss, (t2 - t1)),flush=True)
+        torch.save(engine.model.state_dict(), args.save+"_epoch_"+str(j)+"_"+str(round(mvalid_loss,2))+".pth")
 
         print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
         print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
