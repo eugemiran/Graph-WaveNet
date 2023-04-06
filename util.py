@@ -165,11 +165,11 @@ def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_siz
     data['stations_crossval'] = data['stations_train']
 
     for i, (train_index, test_index) in enumerate(tscv.split(data['x_crossval'])):
-        data[f'train_x_fold_{i}'] = data['x_crossval'][train_index[0]: train_index[-1]]
-        data[f'train_y_fold_{i}'] = data['y_crossval'][train_index[0]: train_index[-1]]
+        data[f'train_x_fold_{i}'] = [data['x_crossval'][j] for j in train_index]
+        data[f'train_y_fold_{i}'] = [data['y_crossval'][j] for j in train_index]
         data[f'train_fold_{i}_loader'] = DataLoader(data[f'train_x_fold_{i}'], data[f'train_y_fold_{i}'], batch_size, data['dates_crossval'], data['stations_crossval'])
-        data[f'test_x_fold_{i}'] = data['x_crossval'][test_index[0]: test_index[-1]]
-        data[f'test_y_fold_{i}'] = data['y_crossval'][test_index[0]: test_index[-1]]
+        data[f'test_x_fold_{i}'] = [data['x_crossval'][j] for j in test_index]
+        data[f'test_y_fold_{i}'] = [data['y_crossval'][j] for j in test_index]
         data[f'test_fold_{i}_loader'] = DataLoader(data[f'test_x_fold_{i}'], data[f'test_y_fold_{i}'], batch_size, data['dates_crossval'], data['stations_crossval'])
 
     scaler = StandardScaler(mean=data['x_train'][..., 0].mean(), std=data['x_train'][..., 0].std())
