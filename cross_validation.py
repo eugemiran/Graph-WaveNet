@@ -45,8 +45,14 @@ def main():
     os.makedirs(args.save, exist_ok=True)
 
     device = torch.device(args.device)
+
+       # format: (dropout, weight_decay, learning_rate)
+    # should have the length of splits
+    hiperparams_grid = [(0.3, 0.0001, 0.01), (0.3, 0.0001, 0.02), (0.3, 0.0001, 0.03), (0.3, 0.0001, 0.04), (0.3, 0.0001, 0.05), (0.3, 0.0001, 0.06), (0.3, 0.0001, 0.07), (0.3, 0.0001, 0.009), (0.3, 0.0001, 0.008), (0.3, 0.0001, 0.08)]
+    print(len(hiperparams_grid))
+
     sensor_ids, sensor_id_to_ind, adj_mx = util.load_adj(args.adjdata,args.adjtype)
-    dataloader = util.load_dataset(args.data, args.batch_size, args.batch_size, args.batch_size, args.splits)
+    dataloader = util.load_dataset(args.data, args.batch_size, args.batch_size, args.batch_size, len(hiperparams_grid))
     scaler = dataloader['scaler']
     supports = [torch.tensor(i).to(device) for i in adj_mx]
 
@@ -70,11 +76,7 @@ def main():
     total_valid_loss = []
     total_train_loss=[]
 
-    # format: (dropout, weight_decay)
-    # should have the length of splits
-    hiperparams_grid = [(0.1, 0.0001), (0.3, 0.0001), (0.5, 0.0001), (0.8, 0.0001), (1, 0.0001)]
-
-    for i in range(args.splits):    
+    for i in range(len(hiperparams_grid)):    
         t1 = time.time()
 
         adjinit_init = adjinit
@@ -82,13 +84,14 @@ def main():
         scaler_init = scaler
         dropout = hiperparams_grid[i][0]
         weight_decay = hiperparams_grid[i][1]
+        learning_rate = hiperparams_grid[i][2]
 
         #Defino aca los parametros
         engine = trainer(scaler_init, args.in_dim, args.seq_length, args.num_nodes, args.nhid, dropout,
-                         args.learning_rate, weight_decay, device, supports_init, args.gcn_bool, args.addaptadj,
+                         learning_rate, weight_decay, device, supports_init, args.gcn_bool, args.addaptadj,
                          adjinit_init)
         print('')
-        print(f'Starts training with values: Droput:{dropout} Weight decay: {weight_decay}')
+        print(f'Starts training with values: Droput:{dropout} Weight decay: {weight_decay} Learning rate: {learning_rate}')
 
 
         for j in range(args.from_epochs + 1, args.epochs+1):
