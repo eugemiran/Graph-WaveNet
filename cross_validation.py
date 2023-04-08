@@ -46,9 +46,12 @@ def main():
 
     device = torch.device(args.device)
 
-       # format: (dropout, weight_decay, learning_rate)
+    # format: (dropout, weight_decay, learning_rate)
     # should have the length of splits
-    hiperparams_grid = [(0.3, 0.0001, 0.01), (0.3, 0.0001, 0.02), (0.3, 0.0001, 0.03), (0.3, 0.0001, 0.04), (0.3, 0.0001, 0.05), (0.3, 0.0001, 0.06), (0.3, 0.0001, 0.07), (0.3, 0.0001, 0.009), (0.3, 0.0001, 0.008), (0.3, 0.0001, 0.08)]
+    # hiperparams_grid = [(0.3, 0.0001, 0.0007), (0.3, 0.0001, 0.0008), (0.3, 0.0001, 0.0006), (0.3, 0.0001, 0.0009), (0.3, 0.0001, 0.0005)]
+    # hiperparams_grid = [(0.3, 0.0001, 0.03), (0.3, 0.0001, 0.015), (0.3, 0.0001, 0.02), (0.3, 0.0001, 0.009), (0.3, 0.0001, 0.01)]
+    hiperparams_grid = [(0.3, 0.0001, 0.1), (0.3, 0.0001, 0.2), (0.3, 0.0001, 0.07), (0.3, 0.0001, 0.06), (0.3, 0.0001, 0.05), (0.3, 0.0001, 0.04), (0.3, 0.0001, 0.03), (0.3, 0.0001, 0.02), (0.3, 0.0001, 0.015), (0.3, 0.0001, 0.01), (0.3, 0.0001, 0.009), (0.3, 0.0001, 0.008), (0.3, 0.0001, 0.001), (0.3, 0.0001, 0.0008), (0.3, 0.0001, 0.0007), (0.3, 0.0001, 0.0005), (0.3, 0.0001, 0.0003), (0.3, 0.0001, 0.0001), (0.3, 0.0001, 0.00001)]
+
     print(len(hiperparams_grid))
 
     sensor_ids, sensor_id_to_ind, adj_mx = util.load_adj(args.adjdata,args.adjtype)
@@ -92,64 +95,68 @@ def main():
                          adjinit_init)
         print('')
         print(f'Starts training with values: Droput:{dropout} Weight decay: {weight_decay} Learning rate: {learning_rate}')
+        valid_loss = []
 
+        for k in range(args.splits):
+            for j in range(args.from_epochs + 1, args.epochs+1):
+                print(f'Epoch number: {j}')
+                train_loss = []
+                dataloader[f'train_fold_{k}_loader'].shuffle()
 
-        for j in range(args.from_epochs + 1, args.epochs+1):
-            print(f'Epoch number: {j}')
-            train_loss = []
-            valid_loss = []
-            dataloader[f'train_fold_{i}_loader'].shuffle()
+                for iter, (x, y, _, _) in enumerate(dataloader[f'train_fold_{k}_loader'].get_iterator()):
+                    trainx = torch.Tensor(x).to(device)
+                    trainx = trainx.transpose(1, 3)
+                    trainy = torch.Tensor(y).to(device)
+                    trainy = trainy.transpose(1, 3)
+                    metrics = engine.train(trainx, trainy[:,0,:,:])
+                    train_loss.append(metrics[2])
+                    if iter % args.print_every == 0:
+                        log = 'Iter: {:03d}, Train Loss: {:.4f}'
+                        print(log.format(iter, train_loss[-1],flush=True))
+                t2 = time.time()
+                train_time.append(t2-t1)
 
-            for iter, (x, y, _, _) in enumerate(dataloader[f'train_fold_{i}_loader'].get_iterator()):
-                trainx = torch.Tensor(x).to(device)
-                trainx = trainx.transpose(1, 3)
-                trainy = torch.Tensor(y).to(device)
-                trainy = trainy.transpose(1, 3)
-                metrics = engine.train(trainx, trainy[:,0,:,:])
-                train_loss.append(metrics[2])
-                total_train_loss.append(metrics[2])
-                if iter % args.print_every == 0:
-                    log = 'Iter: {:03d}, Train Loss: {:.4f}'
-                    print(log.format(iter, train_loss[-1],flush=True))
-            t2 = time.time()
-            train_time.append(t2-t1)
-
-        #aca
-        s1 = time.time()
-        dataloader[f'test_fold_{i}_loader'].shuffle()
+            #aca
+            s1 = time.time()
+            dataloader[f'test_fold_{k}_loader'].shuffle()
         
-        for iter, (x, y, _, _) in enumerate(dataloader[f'test_fold_{i}_loader'].get_iterator()):
-            testx = torch.Tensor(x).to(device)
-            testx = testx.transpose(1, 3)
-            testy = torch.Tensor(y).to(device)
-            testy = testy.transpose(1, 3)
-            metrics = engine.eval(testx, testy[:,0,:,:])
-            # preds = engine.model(testx).transpose(1,3)
-            # val_outputs.append(preds.squeeze())
-            total_valid_loss.append(metrics[2])
-            valid_loss.append(metrics[2])
+            for iter, (x, y, _, _) in enumerate(dataloader[f'test_fold_{k}_loader'].get_iterator()):
+                testx = torch.Tensor(x).to(device)
+                testx = testx.transpose(1, 3)
+                testy = torch.Tensor(y).to(device)
+                testy = testy.transpose(1, 3)
+                metrics = engine.eval(testx, testy[:,0,:,:])
+                # preds = engine.model(testx).transpose(1,3)
+                # val_outputs.append(preds.squeeze())
+                valid_loss.append(metrics[2])
 
-        s2 = time.time()
-        log = 'Epoch: {:03d}, Inference Time: {:.4f} secs'
-        print(log.format(j,(s2-s1)))
-        print(f'Valid loss: {metrics[2]}')
-        val_time.append(s2-s1)
-        mtrain_loss = np.mean(train_loss)
+            s2 = time.time()
+            log = 'Epoch: {:03d}, Inference Time: {:.4f} secs'
+            print(log.format(j,(s2-s1)))
+            print(f'Valid loss: {metrics[2]}')
+            val_time.append(s2-s1)
+            mtrain_loss = np.mean(train_loss)
+            total_train_loss.append(mtrain_loss)
+
+            log = 'Epoch: {:03d}, Train Loss: {:.4f}, Training Time: {:.4f}/epoch'
+            print(log.format(j, mtrain_loss, (t2 - t1)),flush=True)
+        # torch.save(engine.model.state_dict(), args.save+"_epoch_"+str(j)+"_"+str(round(mvalid_loss,2))+".pth")
         mvalid_loss = np.mean(valid_loss)
-
-
-        log = 'Epoch: {:03d}, Train Loss: {:.4f}, Valid Loss: {:.4f}, Training Time: {:.4f}/epoch'
-        print(log.format(j, mtrain_loss, mvalid_loss, (t2 - t1)),flush=True)
-        torch.save(engine.model.state_dict(), args.save+"_epoch_"+str(j)+"_"+str(round(mvalid_loss,2))+".pth")
-
+        total_valid_loss.append(mvalid_loss)
         print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
         print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
-        train_loss_file = open("./garage/train_loss.txt", "w")
-        for element in total_train_loss:
-            train_loss_file.write(str(element) + "\n")
-            
 
-        train_loss_file.close()
+    train_loss_file = open("./garage/cross_train_loss.txt", "w")
+    for element in total_train_loss:
+        train_loss_file.write(str(element) + "\n")
+    
+    val_loss_file = open("./garage/cross_val_loss.txt", "w")
+    for element in total_valid_loss:
+        val_loss_file.write(str(element) + "\n")
+        
+
+    train_loss_file.close()
+    val_loss_file.close()
 
 
 if __name__ == "__main__":
