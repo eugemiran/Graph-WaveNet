@@ -159,10 +159,9 @@ def load_dataset(dataset_dir, batch_size, valid_batch_size= None, test_batch_siz
         data['stations_' + category] = cat_data['stations']
 
     # Add cross validation data
-    data['x_crossval'] = list(np.concatenate((np.array(data['x_train']), np.array(data['x_val']))))
-    data['y_crossval'] = list(np.concatenate((data['y_train'], data['y_val'])))
-    data['dates_crossval'] = data['dates_train']
-    data['stations_crossval'] = data['stations_train']
+    data['x_crossval'] = list(np.array(data['x_val']))
+    data['y_crossval'] = list(data['y_val'])
+    data['dates_crossval'] = data['dates_val']
 
     for i, (train_index, test_index) in enumerate(tscv.split(data['x_crossval'])):
         data[f'train_x_fold_{i}'] = [data['x_crossval'][j] for j in train_index]
