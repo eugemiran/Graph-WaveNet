@@ -163,16 +163,21 @@ def main():
 
         train_loss_file = open("./garage/train_loss.txt", "w")
         val_loss_file = open("./garage/val_loss.txt", "w")
+        mean_val_loss_file = open("./garage/mean_val_loss.txt", "w")
 
         for element in total_train_loss:
             train_loss_file.write(str(element) + "\n")
         
         for element in total_mean_val_loss:
             val_loss_file.write(str(element) + "\n")
+
+        for element in total_val_loss:
+            mean_val_loss_file.write(str(element) + "\n")
             
 
         train_loss_file.close()
         val_loss_file.close()
+        mean_val_loss_file.close()
 
     #testing
     if (not args.no_train):
