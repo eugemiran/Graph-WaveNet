@@ -74,7 +74,8 @@ def main():
 
 
     print("start training...",flush=True)
-    his_loss =[]
+    total_val_loss =[]
+    total_mean_val_loss =[]
     val_time = []
     train_time = []
     total_train_loss = []
@@ -123,8 +124,8 @@ def main():
                 metrics = engine.eval(testx, testy[:,0,:,:])
                 # preds = engine.model(testx).transpose(1,3)
                 # val_outputs.append(preds.squeeze())
-                
                 valid_loss.append(metrics[2])
+                total_val_loss.append(metrics[2])
                 valid_mape.append(metrics[1])
                 valid_rmse.append(metrics[2])
 
@@ -139,7 +140,7 @@ def main():
             mvalid_loss = np.mean(valid_loss)
             mvalid_mape = np.mean(valid_mape)
             mvalid_rmse = np.mean(valid_rmse)
-            his_loss.append(mvalid_rmse)
+            total_mean_val_loss.append(mvalid_rmse)
             if mvalid_rmse < lowest_rmse_yet:
                 torch.save(engine.model.state_dict(), best_model_save_path)
                 lowest_rmse_yet = mvalid_rmse
@@ -162,10 +163,11 @@ def main():
 
         train_loss_file = open("./garage/train_loss.txt", "w")
         val_loss_file = open("./garage/val_loss.txt", "w")
+
         for element in total_train_loss:
             train_loss_file.write(str(element) + "\n")
         
-        for element in his_loss:
+        for element in total_mean_val_loss:
             val_loss_file.write(str(element) + "\n")
             
 
@@ -174,8 +176,8 @@ def main():
 
     #testing
     if (not args.no_train):
-        bestid = np.argmin(his_loss)
-        # engine.model.load_state_dict(torch.load(args.save+"_epoch_"+str(bestid+1)+"_"+str(round(his_loss[bestid],2))+".pth"))
+        bestid = np.argmin(total_mean_val_loss)
+        # engine.model.load_state_dict(torch.load(args.save+"_epoch_"+str(bestid+1)+"_"+str(round(total_mean_val_loss[bestid],2))+".pth"))
     else:
         list_of_files = glob.glob('./garage/*best?*')
         latest_file = max(list_of_files, key=os.path.getctime)
@@ -206,7 +208,7 @@ def main():
     print("Training finished")
 
     if (not args.no_train):
-        print("The valid loss on best model is", str(round(his_loss[bestid],4)))
+        print("The valid loss on best model is", str(round(total_mean_val_loss[bestid],4)))
 
     # result_metrics = pd.DataFrame(columns=["date", "id", "y", "prediction"])
     # dates = np.squeeze(dates, axis=1)
@@ -242,7 +244,7 @@ def main():
     print(log.format(args.seq_length, np.mean(amae),np.mean(amape),np.mean(armse)))
 
     if (not args.no_train):
-        torch.save(engine.model.state_dict(), args.save+"_exp"+str(args.expid)+"_best_"+str(round(his_loss[bestid],2))+".pth")
+        torch.save(engine.model.state_dict(), args.save+"_exp"+str(args.expid)+"_best_"+str(round(total_mean_val_loss[bestid],2))+".pth")
     else:
         torch.save(engine.model.state_dict(), args.save+"_exp"+str(args.expid)+"_best.pth")
 
