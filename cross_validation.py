@@ -77,7 +77,9 @@ def main():
     val_time = []
     train_time = []
     total_valid_loss = []
+    total_mean_valid_loss = []
     total_train_loss=[]
+    total_mean_train_loss=[]
 
     for i in range(len(hiperparams_grid)):    
         t1 = time.time()
@@ -110,6 +112,7 @@ def main():
                     trainy = trainy.transpose(1, 3)
                     metrics = engine.train(trainx, trainy[:,0,:,:])
                     train_loss.append(metrics[2])
+                    total_train_loss.append(metrics[2])
                     if iter % args.print_every == 0:
                         log = 'Iter: {:03d}, Train Loss: {:.4f}'
                         print(log.format(iter, train_loss[-1],flush=True))
@@ -128,6 +131,7 @@ def main():
                 metrics = engine.eval(testx, testy[:,0,:,:])
                 # preds = engine.model(testx).transpose(1,3)
                 # val_outputs.append(preds.squeeze())
+                total_valid_loss.appen(metrics[2])
                 valid_loss.append(metrics[2])
 
             s2 = time.time()
@@ -136,26 +140,36 @@ def main():
             print(f'Valid loss: {metrics[2]}')
             val_time.append(s2-s1)
             mtrain_loss = np.mean(train_loss)
-            total_train_loss.append(mtrain_loss)
+            total_mean_train_loss.append(mtrain_loss)
 
             log = 'Epoch: {:03d}, Train Loss: {:.4f}, Training Time: {:.4f}/epoch'
             print(log.format(j, mtrain_loss, (t2 - t1)),flush=True)
         # torch.save(engine.model.state_dict(), args.save+"_epoch_"+str(j)+"_"+str(round(mvalid_loss,2))+".pth")
         mvalid_loss = np.mean(valid_loss)
-        total_valid_loss.append(mvalid_loss)
+        total_mean_valid_loss.append(mvalid_loss)
         print("Average Training Time: {:.4f} secs/epoch".format(np.mean(train_time)))
         print("Average Inference Time: {:.4f} secs".format(np.mean(val_time)))
 
+    mean_train_loss_file = open("./garage/cross_mean_train_loss.txt", "w")
+    for element in total_mean_train_loss:
+        mean_train_loss_file.write(str(element) + "\n")
+    
     train_loss_file = open("./garage/cross_train_loss.txt", "w")
     for element in total_train_loss:
         train_loss_file.write(str(element) + "\n")
     
+    mean_val_loss_file = open("./garage/cross_mean_val_loss.txt", "w")
+    for element in total_mean_valid_loss:
+        mean_val_loss_file.write(str(element) + "\n")
+    
     val_loss_file = open("./garage/cross_val_loss.txt", "w")
     for element in total_valid_loss:
         val_loss_file.write(str(element) + "\n")
-        
 
+
+    mean_train_loss_file.close()
     train_loss_file.close()
+    mean_val_loss_file.close()
     val_loss_file.close()
 
 
