@@ -76,10 +76,12 @@ def main():
     print("start training...",flush=True)
     total_val_loss =[]
     total_mean_val_loss =[]
+    total_val_rmse =[]
+    total_mean_val_rmse =[]
     val_time = []
     train_time = []
     total_train_loss = []
-    # val_outputs = []
+    total_train_rmse = []
     # val_realy = torch.Tensor(dataloader['y_val']).to(device)
     # val_realy = val_realy.transpose(1,3)[:,0,:,:]
     if (not args.no_train):
@@ -101,7 +103,8 @@ def main():
                 trainy = trainy.transpose(1, 3)
                 metrics = engine.train(trainx, trainy[:,0,:,:])
                 train_loss.append(metrics[2])
-                total_train_loss.append(metrics[2])
+                total_train_rmse.append(metrics[2])
+                total_train_loss.append(metrics[0])
                 train_mape.append(metrics[1])
                 train_rmse.append(metrics[2])
                 if iter % args.print_every == 0 :
@@ -124,8 +127,9 @@ def main():
                 metrics = engine.eval(testx, testy[:,0,:,:])
                 # preds = engine.model(testx).transpose(1,3)
                 # val_outputs.append(preds.squeeze())
-                valid_loss.append(metrics[2])
-                total_val_loss.append(metrics[2])
+                valid_loss.append(metrics[0])
+                total_val_loss.append(metrics[0])
+                total_val_rmse.append(metrics[2])
                 valid_mape.append(metrics[1])
                 valid_rmse.append(metrics[2])
 
@@ -140,7 +144,8 @@ def main():
             mvalid_loss = np.mean(valid_loss)
             mvalid_mape = np.mean(valid_mape)
             mvalid_rmse = np.mean(valid_rmse)
-            total_mean_val_loss.append(mvalid_rmse)
+            total_mean_val_loss.append(mvalid_loss)
+            total_mean_val_rmse.append(mvalid_rmse)
             if mvalid_rmse < lowest_rmse_yet:
                 torch.save(engine.model.state_dict(), best_model_save_path)
                 lowest_rmse_yet = mvalid_rmse
@@ -164,20 +169,35 @@ def main():
         train_loss_file = open("./garage/train_loss.txt", "w")
         val_loss_file = open("./garage/val_loss.txt", "w")
         mean_val_loss_file = open("./garage/mean_val_loss.txt", "w")
+        train_rmse_file = open("./garage/train_rmse.txt", "w")
+        val_rmse_file = open("./garage/val_rmse.txt", "w")
+        mean_val_rmse_file = open("./garage/mean_val_rmse.txt", "w")
 
         for element in total_train_loss:
             train_loss_file.write(str(element) + "\n")
         
         for element in total_mean_val_loss:
-            val_loss_file.write(str(element) + "\n")
+            mean_val_loss_file.write(str(element) + "\n")
 
         for element in total_val_loss:
-            mean_val_loss_file.write(str(element) + "\n")
+            val_loss_file.write(str(element) + "\n")
+
+        for element in total_train_rmse:
+            train_rmse_file.write(str(element) + "\n")
+        
+        for element in total_mean_val_rmse:
+            mean_val_rmse_file.write(str(element) + "\n")
+
+        for element in total_val_rmse:
+            val_rmse_file.write(str(element) + "\n")
             
 
         train_loss_file.close()
         val_loss_file.close()
         mean_val_loss_file.close()
+        train_rmse_file.close()
+        val_rmse_file.close()
+        mean_val_rmse_file.close()
 
     #testing
     if (not args.no_train):
