@@ -13,11 +13,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--device',type=str,default='cpu',help='')
 parser.add_argument('--data',type=str,default='data/MAX-TEMP',help='data path')
 parser.add_argument('--adjdata',type=str,default='data/sensor_graph/adj_mx.pkl',help='adj data path')
-parser.add_argument('--adjtype',type=str,default='doubletransition',help='adj type')
-parser.add_argument('--aptonly',action='store_true',help='whether only adaptive adj')
-parser.add_argument('--addaptadj',action='store_true',help='whether add adaptive adj')
+parser.add_argument('--adjtype',type=str,default='doubletransition',help='adj type')  # Este parametro dice si inicializamos el tercer termino con info de las estaciones
+parser.add_argument('--aptonly',action='store_true',help='whether only adaptive adj') # Este parametro dice si incluimos unicamente el tercer termino
+parser.add_argument('--addaptadj',action='store_true',help='whether add adaptive adj') # Este parametro dice si el tercer termino aprende o no 
 parser.add_argument('--gcn_bool',action='store_true',help='whether to add graph convolution layer')
-parser.add_argument('--randomadj',action='store_true',help='whether random initialize adaptive adj')
+parser.add_argument('--randomadj',action='store_true',help='whether random initialize adaptive adj') # Este parametro dice si inicializamos el tercer termino randomicamente o no
 parser.add_argument('--seq_length',type=int,default=12,help='') # son los y
 parser.add_argument('--nhid',type=int,default=32,help='')
 parser.add_argument('--in_dim',type=int,default=1,help='inputs dimension')
